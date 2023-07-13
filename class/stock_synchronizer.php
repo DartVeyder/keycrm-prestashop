@@ -113,11 +113,12 @@ class StockSynchronizer{
             'date' => date('Y-m-d H:i:s'),
             'product_attribute_reference' => $reference,
             'id_product_attribute' => $product["id_product_attribute"],
-            'product_attribute_quantity' => $quantity,
+            'product_attribute_quantity' => $product['product_attribute_quantity'],
             'id_product' => $product['id_product'],
             'product_reference' => $product['product_reference'],
             'id_stock_available' => $product['id_stock_available'],
-            'stock_available_quantity' => $quantity,
+            'stock_available_quantity' => $product['stock_available_quantity'],
+            'quantity' => $quantity,
             'status' => 'success'
         ];
     }else{
