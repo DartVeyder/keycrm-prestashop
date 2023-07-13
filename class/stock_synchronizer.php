@@ -10,8 +10,7 @@ class StockSynchronizer{
    
     }
 
-    private function logs($text){
-        $path = 'log.txt'; 
+    private function logs($path, $text){
         $file = fopen( $path, 'a+');
         fwrite($file, $text . "\n");
         fclose($file);
@@ -19,24 +18,40 @@ class StockSynchronizer{
     private function keycrm_products($order){
         $products = $order['products'];
         $order_id = $order['id'];
+        $status_order_id = $order['status_id'];
+
+        $is_status_reserv = [4,25,24,63,96,32,37,38,54,55,57,58,83,84,59,70,73,74];
+        $is_status_sending = [8,10,20,46,45];
         foreach ($products as $key => $product) {
-            $quantity = $product['offer']['quantity'];
+            $product_quantity = $product['offer']['quantity'];
+            $stock_status = $product['stock_status'];
+            $order_product_quantity = $product['quantity'];
             $sku =  $product['offer']['sku'];
             $name = $product['name'];
+            $in_reserve = $product['offer']['in_reserve'];
+
+            $quantity = $product_quantity - $in_reserve; 
             
             $result = $this->update_ps_product_stock($quantity,  $sku); 
             
             $result['name'] =  $name ;
             $result['order_id'] = $order_id;
+            $result['status_order_id'] = $status_order_id; 
+            $result['stock_status'] = $stock_status; 
+            $result['order_product_quantity'] = $order_product_quantity; 
+            $result['product_quantity'] = $product_quantity;
+            $result['in_reserve'] = $in_reserve;
+
             $text =  json_encode($result,JSON_UNESCAPED_UNICODE);
             echo $text . " <br>";
-            $this->logs($text);
+            $this->logs('log.txt', $text);
+            $this->logs('products/'.$sku.'.txt', $text);
         }
     }
 
     public function get_keycrm_order($order_id){
         // Make a GET request to a URL
-        $response = $this->client->request('GET',  KEYCRM_URL_API."/order/$order_id?include=products.offer", [
+        $response = $this->client->request('GET',  KEYCRM_URL_API."/order/$order_id?include=products.offer,status", [
             'headers' => [
                 'Authorization' => 'Bearer ' .KEYCRM_TOKEN,
                 'Accept' => 'application/json', 
@@ -125,6 +140,7 @@ class StockSynchronizer{
         return [
             'date' => date('Y-m-d H:i:s'),
             'product_attribute_reference' => $reference,
+            'quantity' => $quantity,
             'status' => 'failed'
         ];
     }
