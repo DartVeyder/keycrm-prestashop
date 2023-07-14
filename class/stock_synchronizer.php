@@ -31,7 +31,7 @@ class StockSynchronizer{
             $in_reserve = $product['offer']['in_reserve'];
 
             $quantity = $product_quantity - $in_reserve; 
-            
+            if($sku){
              $result = $this->update_ps_product_stock($quantity,  $sku); 
             
             $result['name'] =  $name ;
@@ -46,6 +46,7 @@ class StockSynchronizer{
             echo $text . " <br>";
             $this->logs('log.txt', $text);
             $this->logs('products/'.$sku.'.txt', $text);
+            }
         }
     }
 
