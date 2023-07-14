@@ -32,7 +32,7 @@ class StockSynchronizer{
 
             $quantity = $product_quantity - $in_reserve; 
             
-            $result = $this->update_ps_product_stock($quantity,  $sku); 
+             $result = $this->update_ps_product_stock($quantity,  $sku); 
             
             $result['name'] =  $name ;
             $result['order_id'] = $order_id;
@@ -90,9 +90,57 @@ class StockSynchronizer{
         }
     }
 
-    private function update_ps_product_stock($quantity, $reference){
+    public function update_ps_product_stock($quantity, $reference){
+        echo  $reference;
+        $sql = "SELECT * FROM "._DB_PREFIX_."product  WHERE reference = '$reference'";
+        $product = Db::getInstance()->executeS($sql)[0]; 
+        if($product['product_type'] == 'standard' && $product || $product['product_type'] == '' && $product ){
+            $sql = "
+            SELECT 
+                product.id_product, 
+                product.reference as product_reference,
+                stock_available.quantity as stock_available_quantity,
+                id_stock_available,
+                product.product_type
+            FROM 
+                "._DB_PREFIX_."product product 
+            JOIN 
+                "._DB_PREFIX_."stock_available stock_available
+            ON 
+                product.id_product = stock_available.id_product
+            WHERE 
+                product.reference = '$reference'
+            ";
+            $product = Db::getInstance()->executeS($sql)[0]; 
+            
+            $sql = "UPDATE "._DB_PREFIX_."stock_available SET quantity = $quantity  WHERE id_stock_available = $product[id_stock_available]";
+            Db::getInstance()->executeS($sql); 
+            
+            if($product ){
+                return [
+                    'date' => date('Y-m-d H:i:s'),
+                    'id_product' => $product['id_product'],
+                    'product_reference' => $product['product_reference'],
+                    'id_stock_available' => $product['id_stock_available'],
+                    'stock_available_quantity' => $product['stock_available_quantity'],
+                    'quantity' => $quantity,
+                    'product_type' => $product['product_type'],
+                    'status' => 'success'
+                ];
+            }else{
+                return [
+                    'date' => date('Y-m-d H:i:s'),
+                    'product_attribute_reference' => $reference,
+                    'product_type' => $product['product_type'],
+                    'quantity' => $quantity,
+                    'status' => 'failed'
+                ];
+            }
 
-        $sql = "
+           
+
+        }else{
+            $sql = "
         SELECT 
             product_attribute.id_product_attribute, 
             product_attribute.id_product, 
@@ -100,10 +148,10 @@ class StockSynchronizer{
             stock_available.quantity as stock_available_quantity, 
             product_attribute.reference  as product_attribute_reference, 
             product.reference as product_reference,
+            product.product_type,
             id_stock_available
         FROM 
             "._DB_PREFIX_."product_attribute product_attribute
-        
         JOIN 
             "._DB_PREFIX_."product product
         ON 
@@ -122,7 +170,8 @@ class StockSynchronizer{
         Db::getInstance()->executeS($sql); 
         
         $sql = "UPDATE "._DB_PREFIX_."product_attribute SET quantity = $quantity  WHERE id_product_attribute = $product[id_product_attribute]";
-        Db::getInstance()->executeS($sql); 
+        Db::getInstance()->executeS($sql);
+    
         if($product ){
         return [
             'date' => date('Y-m-d H:i:s'),
@@ -134,6 +183,7 @@ class StockSynchronizer{
             'id_stock_available' => $product['id_stock_available'],
             'stock_available_quantity' => $product['stock_available_quantity'],
             'quantity' => $quantity,
+            'product_type' => $product['product_type'],
             'status' => 'success'
         ];
     }else{
@@ -141,9 +191,13 @@ class StockSynchronizer{
             'date' => date('Y-m-d H:i:s'),
             'product_attribute_reference' => $reference,
             'quantity' => $quantity,
+            'product_type' => $product['product_type'],
             'status' => 'failed'
         ];
     }
+        }
+      
+        
     }
     
 }
