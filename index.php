@@ -11,6 +11,6 @@ require_once('class/stock_synchronizer.php');
 
  
     $stockSynchronizer = new StockSynchronizer();
-     
-    $stockSynchronizer->webhook();
+    dd( $stockSynchronizer->update_ps_product_stock(10, '11111111111'));
+    //$stockSynchronizer->webhook();
 ?>
