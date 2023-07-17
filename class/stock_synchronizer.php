@@ -32,7 +32,7 @@ class StockSynchronizer{
 
             $quantity = $product_quantity - $in_reserve; 
             if($sku){
-             $result = $this->update_ps_product_stock($quantity,  $sku); 
+            $result = $this->update_ps_product_stock($quantity,  $sku); 
             
             $result['name'] =  $name ;
             $result['order_id'] = $order_id;
@@ -48,6 +48,65 @@ class StockSynchronizer{
             $this->logs('products/'.$sku.'.txt', $text);
             }
         }
+    }
+    public function get_keycrm_stocks(){
+        // Make a GET request to a URL
+        $i = 1;
+        $products_all = [];
+        do {
+            $response = $this->client->request('GET',  KEYCRM_URL_API."/offers/stocks?limit=50&page=$i", [
+                'headers' => [
+                   'Authorization' => 'Bearer ' .KEYCRM_TOKEN,
+                   'Accept' => 'application/json', 
+                ],
+            ]); 
+            $products =json_decode($response->getBody()->getContents(),1);
+            $products_all  = array_merge($products_all,  $products['data']);
+           
+            $i++;
+        } while ($products['next_page_url'] != null);
+       
+        
+        
+        // Get the response body as a string
+    
+        $product_quantities = [];
+        $sql = "UPDATE "._DB_PREFIX_."stock_available SET quantity = 0, physical_quantity = 0";
+        Db::getInstance()->executeS($sql); 
+        foreach ($products_all as $key => $product) {
+            $quantity = $product['quantity'] - $product['reserve'];
+            $reference = $product['sku'];
+            $result = $this->update_ps_product_stock($quantity, $reference);
+            if($result['id_product']){
+                $product_quantities[$result['id_product']][] = [
+                    'quantity' => $quantity,
+                    'reference' =>  $reference
+                ];
+            } 
+
+            $this->logs('cron_product_log.txt' , json_encode($result));
+
+           
+        }
+       
+        foreach ($product_quantities as $id_product => $product_quant) {
+            $stock_product = array_sum(array_column($product_quant, 'quantity'));
+            echo $id_product . " - " . $stock_product . "<br>";
+         
+            $sql = "UPDATE "._DB_PREFIX_."stock_available SET quantity = $stock_product, physical_quantity = $stock_product WHERE id_product = $id_product AND id_product_attribute = 0";
+            Db::getInstance()->executeS($sql); 
+        }
+
+      
+        return count($products_all);
+    }
+
+    public function cron(){
+        $cron_start =  date("Y-m-d H:i:s");
+        $num_product = $this->get_keycrm_stocks();
+        $cron_end=  date("Y-m-d H:i:s");
+        $text = "cron start: $cron_start  cron end:  $cron_end  num_product  $num_product";
+        $this->logs('cron_log.txt', $text);
     }
 
     public function get_keycrm_order($order_id){
@@ -92,7 +151,7 @@ class StockSynchronizer{
     }
 
     public function update_ps_product_stock($quantity, $reference){
-        echo  $reference;
+        
         $sql = "SELECT * FROM "._DB_PREFIX_."product  WHERE reference = '$reference'";
         $product = Db::getInstance()->executeS($sql)[0]; 
         if($product['product_type'] == 'standard' && $product || $product['product_type'] == '' && $product ){
