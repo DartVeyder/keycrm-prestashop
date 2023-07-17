@@ -85,13 +85,19 @@ class StockSynchronizer{
             } 
 
             $this->logs('cron_product_log.txt' , json_encode($result));
-
+            echo "$result[date] | Артикл: $reference | Кількість:  $quantity | ";
+             if($result["status"] == "success" ){
+                echo 'Є на сайті і оновлено';
+             }else{
+                echo 'Нема на сайті не оновлено '; 
+             }  
+             echo "<br>";
            
         }
        
         foreach ($product_quantities as $id_product => $product_quant) {
             $stock_product = array_sum(array_column($product_quant, 'quantity'));
-            echo $id_product . " - " . $stock_product . "<br>";
+           
          
             $sql = "UPDATE "._DB_PREFIX_."stock_available SET quantity = $stock_product, physical_quantity = $stock_product WHERE id_product = $id_product AND id_product_attribute = 0";
             Db::getInstance()->executeS($sql); 

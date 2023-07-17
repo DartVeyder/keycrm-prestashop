@@ -1,3 +1,8 @@
 2023-07-17 12:59:44 cron start
 2023-07-17 13:21:46 cron startnum_product 2093
 cron start: 2023-07-17 14:01:50  cron end:  2023-07-17 14:02:15  num_product  2093
+cron start: 2023-07-17 14:30:05  cron end:  2023-07-17 14:30:19  num_product  2093
+cron start: 2023-07-17 14:37:22  cron end:  2023-07-17 14:37:35  num_product  2093
+cron start: 2023-07-17 14:37:45  cron end:  2023-07-17 14:37:57  num_product  2093
+cron start: 2023-07-17 14:39:22  cron end:  2023-07-17 14:39:34  num_product  2093
+cron start: 2023-07-17 14:39:58  cron end:  2023-07-17 14:40:12  num_product  2093
